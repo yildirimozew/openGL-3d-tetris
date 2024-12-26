@@ -53,6 +53,8 @@ glm::mat4 viewingMatrix;
 glm::mat4 modelingMatrix = glm::translate(glm::mat4(1.f), glm::vec3(-0.5, -0.5, -0.5));
 glm::vec3 eyePos = glm::vec3(0, 0, 24);
 glm::vec3 lightPos = glm::vec3(0, 0, 7);
+glm::vec3 movingCubePos = glm::vec3(0, 0, 0);
+bool isMoving = true;
 
 //glm::vec3 kdGround(0.334, 0.288, 0.635); // this is the ground color in the demo
 glm::vec3 kdCubes(0.86, 0.11, 0.31);
@@ -479,8 +481,41 @@ void display()
     glClearStencil(0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
+    movingCubePos.y -= 1;
+    glm::vec3 floorPos = glm::vec3(0, -1, 0);
+    glm::mat4 modelingMatrix = glm::translate(glm::mat4(1), movingCubePos);
+    glm::mat4 floorModelingMatrix = glm::translate(glm::mat4(1), floorPos);
+
+    if(isMoving && movingCubePos.y < -5){
+        movingCubePos.y = 2;
+    }
+
+    for(int i = 0; i < 2; i++){
+        glUseProgram(gProgram[i]);
+        glUniformMatrix4fv(modelingMatrixLoc[i], 1, GL_FALSE, glm::value_ptr(modelingMatrix));
+        glUniform3fv(eyePosLoc[i], 1, glm::value_ptr(eyePos));
+        glUniform3fv(lightPosLoc[i], 1, glm::value_ptr(lightPos));
+        glUniform3fv(kdLoc[i], 1, glm::value_ptr(kdCubes));
+    }
+
     drawCube();
     drawCubeEdges();
+
+    for(float k = -4.5; k < 5; k++){
+        for(float j = -4.5; j < 5; j++){
+            glm::vec3 cubePos = glm::vec3(j, -5, k);
+            glm::mat4 modelingMatrix = glm::translate(glm::mat4(1), cubePos);
+            for(int i = 0; i < 2; i++){
+                glUseProgram(gProgram[i]);
+                glUniformMatrix4fv(modelingMatrixLoc[i], 1, GL_FALSE, glm::value_ptr(modelingMatrix));
+                glUniform3fv(eyePosLoc[i], 1, glm::value_ptr(eyePos));
+                glUniform3fv(lightPosLoc[i], 1, glm::value_ptr(lightPos));
+                glUniform3fv(kdLoc[i], 1, glm::value_ptr(kdCubes));
+            }
+            drawCube();
+            drawCubeEdges();
+        }
+    }
     renderText("tetrisGL", gWidth/2 - 55, gHeight/2 - 60, 0.75, glm::vec3(1, 1, 0));
 
     assert(glGetError() == GL_NO_ERROR);
