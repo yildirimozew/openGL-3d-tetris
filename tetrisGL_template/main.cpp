@@ -55,6 +55,8 @@ glm::vec3 eyePos = glm::vec3(0, 0, 24);
 glm::vec3 lightPos = glm::vec3(0, 0, 7);
 glm::vec3 movingCubePos = glm::vec3(0, 0, 0);
 bool isMoving = true;
+glm::int16 speed = 1;
+int direction = 1;
 
 //glm::vec3 kdGround(0.334, 0.288, 0.635); // this is the ground color in the demo
 glm::vec3 kdCubes(0.86, 0.11, 0.31);
@@ -481,29 +483,46 @@ void display()
     glClearStencil(0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-    movingCubePos.y -= 1;
+    movingCubePos.y -= speed;
     glm::vec3 floorPos = glm::vec3(0, -1, 0);
-    glm::mat4 modelingMatrix = glm::translate(glm::mat4(1), movingCubePos);
+    glm::mat4 movingCubeModelingMatrix = glm::translate(glm::mat4(1), movingCubePos);
+    static std::vector<glm::vec3> settledCubes;
     glm::mat4 floorModelingMatrix = glm::translate(glm::mat4(1), floorPos);
 
-    if(isMoving && movingCubePos.y < -5){
-        movingCubePos.y = 2;
+    for (const auto& pos : settledCubes) {
+        glm::mat4 settledModelingMatrix = glm::translate(glm::mat4(1), pos);
+        for (int i = 0; i < 2; i++) {
+            glUseProgram(gProgram[i]);
+            glUniformMatrix4fv(modelingMatrixLoc[i], 1, GL_FALSE, glm::value_ptr(settledModelingMatrix));
+            glUniform3fv(eyePosLoc[i], 1, glm::value_ptr(eyePos));
+            glUniform3fv(lightPosLoc[i], 1, glm::value_ptr(lightPos));
+            glUniform3fv(kdLoc[i], 1, glm::value_ptr(kdCubes));
+        }
+        drawCube();
+        drawCubeEdges();
     }
 
     for(int i = 0; i < 2; i++){
-        glUseProgram(gProgram[i]);
-        glUniformMatrix4fv(modelingMatrixLoc[i], 1, GL_FALSE, glm::value_ptr(modelingMatrix));
-        glUniform3fv(eyePosLoc[i], 1, glm::value_ptr(eyePos));
-        glUniform3fv(lightPosLoc[i], 1, glm::value_ptr(lightPos));
-        glUniform3fv(kdLoc[i], 1, glm::value_ptr(kdCubes));
+        for (int x = 0; x < 3; ++x) {
+            for (int y = 0; y < 3; ++y) {
+            for (int z = 0; z < 3; ++z) {
+                glm::vec3 offset = glm::vec3(x - 1.5, y, z - 1.5);
+                glm::mat4 cubeModelingMatrix = glm::translate(movingCubeModelingMatrix, offset);
+                glUseProgram(gProgram[i]);
+                glUniformMatrix4fv(modelingMatrixLoc[i], 1, GL_FALSE, glm::value_ptr(cubeModelingMatrix));
+                glUniform3fv(eyePosLoc[i], 1, glm::value_ptr(eyePos));
+                glUniform3fv(lightPosLoc[i], 1, glm::value_ptr(lightPos));
+                glUniform3fv(kdLoc[i], 1, glm::value_ptr(kdCubes));
+                drawCube();
+                drawCubeEdges();
+            }
+            }
+        }
     }
 
-    drawCube();
-    drawCubeEdges();
-
-    for(float k = -4.5; k < 5; k++){
-        for(float j = -4.5; j < 5; j++){
-            glm::vec3 cubePos = glm::vec3(j, -5, k);
+    for(float k = -4.5; k < 4; k++){
+        for(float j = -4.5; j < 4; j++){
+            glm::vec3 cubePos = glm::vec3(j, -8, k + 1);
             glm::mat4 modelingMatrix = glm::translate(glm::mat4(1), cubePos);
             for(int i = 0; i < 2; i++){
                 glUseProgram(gProgram[i]);
@@ -516,6 +535,45 @@ void display()
             drawCubeEdges();
         }
     }
+
+
+    if (isMoving) {
+        for (const auto& pos : settledCubes) {
+            for (int x = 0; x < 3; ++x) {
+                for (int y = 0; y < 3; ++y) {
+                    for (int z = 0; z < 3; ++z) {
+                        glm::vec3 offset = glm::vec3(x - 1.5, y - 1, z - 1.5);
+                        glm::vec3 cubePos = movingCubePos + offset;
+                        if (glm::distance(cubePos, pos) < 1.5) {
+                            for (int x = 0; x < 3; ++x) {
+                                for (int y = 0; y < 3; ++y) {
+                                    for (int z = 0; z < 3; ++z) {
+                                        glm::vec3 offset = glm::vec3(x - 1.5, y - 1, z - 1.5);
+                                        settledCubes.push_back(movingCubePos + offset);
+                                    }
+                                }
+                            }
+                            movingCubePos.y = 6;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (isMoving && movingCubePos.y < -5) {
+        for (int x = 0; x < 3; ++x) {
+            for (int y = 0; y < 3; ++y) {
+                for (int z = 0; z < 3; ++z) {
+                    glm::vec3 offset = glm::vec3(x - 1.5, y - 1, z - 1.5);
+                    settledCubes.push_back(movingCubePos + offset);
+                }
+            }
+        }
+        movingCubePos.y = 6;
+    }
+
     renderText("tetrisGL", gWidth/2 - 55, gHeight/2 - 60, 0.75, glm::vec3(1, 1, 0));
 
     assert(glGetError() == GL_NO_ERROR);
@@ -553,6 +611,26 @@ void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
     {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
+    if(key == GLFW_KEY_A && action == GLFW_PRESS){
+        movingCubePos.x -= 1;
+    }
+    if(key == GLFW_KEY_D && action == GLFW_PRESS){
+        movingCubePos.x += 1;
+    }
+    if(key == GLFW_KEY_W && action == GLFW_PRESS){
+        if(speed == 1){
+            speed = 0;
+        }
+    }
+    if(key == GLFW_KEY_S && action == GLFW_PRESS){
+        if(speed == 0){
+            speed = 1;
+        }
+    }
+    if(key == GLFW_KEY_H && action == GLFW_PRESS){
+        direction = (direction - 1) % 4;
+    }
+
 }
 
 void mainLoop(GLFWwindow* window)
