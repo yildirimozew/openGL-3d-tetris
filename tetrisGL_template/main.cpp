@@ -57,6 +57,14 @@ glm::vec3 movingCubePos = glm::vec3(0, 0, 0);
 bool isMoving = true;
 glm::int16 speed = 1;
 int direction = 1;
+float animationTime = 0.5f; 
+float elapsedTime = 0.0f;   
+bool isAnimating = false;   
+glm::mat4 startViewingMatrix; 
+glm::mat4 targetViewingMatrix; 
+glm::mat4 rotationMatrix;
+float startAngle = 0.0f;    
+float targetAngle = 90.0f;   
 
 //glm::vec3 kdGround(0.334, 0.288, 0.635); // this is the ground color in the demo
 glm::vec3 kdCubes(0.86, 0.11, 0.31);
@@ -536,7 +544,6 @@ void display()
         }
     }
 
-
     if (isMoving) {
         for (const auto& pos : settledCubes) {
             for (int x = 0; x < 3; ++x) {
@@ -574,6 +581,38 @@ void display()
         movingCubePos.y = 6;
     }
 
+    if (isAnimating) {
+    float deltaTime = 0.16f; 
+    elapsedTime += deltaTime;
+
+    if (elapsedTime < animationTime) {
+        // Calculate the current angle based on elapsed time
+        float t = elapsedTime / animationTime;
+        float currentAngle = glm::radians(startAngle + t * (targetAngle - startAngle));
+
+        // Create an incremental rotation matrix
+        glm::mat4 incrementalRotation = glm::rotate(glm::mat4(1.0f), currentAngle, glm::vec3(0, 1, 0));
+
+        // Combine the starting viewing matrix with the incremental rotation
+        viewingMatrix = startViewingMatrix * incrementalRotation;
+
+        // Update the shader with the interpolated matrix
+        for (int i = 0; i < 2; ++i) {
+            glUseProgram(gProgram[i]);
+            glUniformMatrix4fv(viewingMatrixLoc[i], 1, GL_FALSE, glm::value_ptr(viewingMatrix));
+        }
+    } else {
+        // End the animation
+        isAnimating = false;
+        viewingMatrix = startViewingMatrix * rotationMatrix;
+
+        // Final update to the shader
+        for (int i = 0; i < 2; ++i) {
+            glUseProgram(gProgram[i]);
+            glUniformMatrix4fv(viewingMatrixLoc[i], 1, GL_FALSE, glm::value_ptr(viewingMatrix));
+        }
+    }
+}
     renderText("tetrisGL", gWidth/2 - 55, gHeight/2 - 60, 0.75, glm::vec3(1, 1, 0));
 
     assert(glGetError() == GL_NO_ERROR);
@@ -627,9 +666,32 @@ void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
             speed = 1;
         }
     }
-    if(key == GLFW_KEY_H && action == GLFW_PRESS){
-        direction = (direction - 1) % 4;
+
+    // Key event to start the animation
+    if (key == GLFW_KEY_H && action == GLFW_PRESS) {
+        isAnimating = true;
+        elapsedTime = 0.0f;
+
+        // Save the current viewing matrix
+        startViewingMatrix = viewingMatrix;
+
+        // Precompute the final rotation matrix for reference
+        rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0, 1, 0));
     }
+
+    if (key == GLFW_KEY_K && action == GLFW_PRESS) {
+        isAnimating = true;
+        elapsedTime = 0.0f;
+
+        // Save the current viewing matrix
+        startViewingMatrix = viewingMatrix;
+
+        // Precompute the final rotation matrix for reference
+        rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(0, 1, 0));
+        targetAngle = -90.0f;
+    }
+
+    // Update animation in the render loop
 
 }
 
