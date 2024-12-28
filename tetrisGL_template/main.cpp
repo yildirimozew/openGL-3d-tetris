@@ -677,6 +677,7 @@ void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
 
         // Precompute the final rotation matrix for reference
         rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0, 1, 0));
+        targetAngle = 90.0f;
     }
 
     if (key == GLFW_KEY_K && action == GLFW_PRESS) {
