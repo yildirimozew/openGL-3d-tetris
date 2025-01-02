@@ -70,6 +70,8 @@ int look_direction = 0;
 glm::vec3 kdCubes(0.86, 0.11, 0.31);
 std::vector<glm::vec3> settledCubes;
 int activeProgramIndex = 0;
+std::map<int,int> counter;
+
 
 // Holds all state information relevant to a character as loaded using FreeType
 struct Character {
@@ -526,7 +528,7 @@ void display()
 
     static double lastTime = glfwGetTime();
     double currentTime = glfwGetTime();
-    if (currentTime - lastTime >= 1.0) {
+    if (currentTime - lastTime >= 1) {
         movingCubePos.y -= speed;
         lastTime = currentTime;
     }
@@ -578,6 +580,7 @@ void display()
                                     for (int z = 0; z < 3; ++z) {
                                         glm::vec3 offset = glm::vec3(x - 1.5, y - 1, z - 1.5);
                                         settledCubes.push_back(movingCubePos + offset);
+                                        counter[int(movingCubePos.y + offset.y)]++;
                                     }
                                 }
                             }
@@ -596,6 +599,7 @@ void display()
                 for (int z = 0; z < 3; ++z) {
                     glm::vec3 offset = glm::vec3(x - 1.5, y - 1, z - 1.5);
                     settledCubes.push_back(movingCubePos + offset);
+                    counter[int(movingCubePos.y + offset.y)]++;
                 }
             }
         }
@@ -755,10 +759,30 @@ void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
 
 }
 
-    std::map<int,int> counter;
 void destroy_cubes(){
-    std::map<int,int> counter;
-
+    for(int i = -10 ; i < 10; i++){
+        if(counter[i] == 81){
+            //erase the cubes
+            for(int j = 0; j < settledCubes.size(); j++){
+                if(int(settledCubes[j].y) == i){
+                    settledCubes.erase(settledCubes.begin() + j);
+                    j--;
+                }
+            }
+            //move the cubes
+            for(int j = 0; j < settledCubes.size(); j++){
+                if(int(settledCubes[j].y) > i){
+                    settledCubes[j].y -= 1;
+                }
+            }
+            //update the counter
+            for(int j = i; j < 10; j++){
+                counter[j] = counter[j+1];
+            }
+            counter[9] = 0;
+            i--;
+        }
+    }
 }
 
 
@@ -775,6 +799,9 @@ void mainLoop(GLFWwindow* window)
 
 int main(int argc, char** argv)   // Create Main Function For Bringing It All Together
 {
+    for(int i = -10 ; i < 10; i++){
+        counter[i] = 0;
+    }
     GLFWwindow* window;
     if (!glfwInit())
     {
