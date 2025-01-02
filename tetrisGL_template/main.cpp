@@ -71,7 +71,8 @@ glm::vec3 kdCubes(0.86, 0.11, 0.31);
 std::vector<glm::vec3> settledCubes;
 int activeProgramIndex = 0;
 std::map<int,int> counter;
-
+string direction_text[4] = {"Front","Right","Back","Left"};
+int score;
 
 // Holds all state information relevant to a character as loaded using FreeType
 struct Character {
@@ -642,8 +643,8 @@ void display()
             }
         }
         }
-    /*renderText("tetrisGL", gWidth/2 - 55, gHeight/2 - 60, 0.75, glm::vec3(1, 1, 0));*/
-
+    renderText("Score: " + std::to_string(score/3), 0, 950, 0.75, glm::vec3(1, 1, 0));
+    renderText(direction_text[look_direction], 0, 920, 0.75, glm::vec3(1, 1, 0));
     assert(glGetError() == GL_NO_ERROR);
 }
 
@@ -654,7 +655,6 @@ void reshape(GLFWwindow* window, int w, int h)
     look_direction = 0;
     gWidth = w;
     gHeight = h;
-
     glViewport(0, 0, w, h);
 
 	// Use perspective projection
@@ -781,6 +781,7 @@ void destroy_cubes(){
             }
             counter[9] = 0;
             i--;
+            score++;
         }
     }
 }
