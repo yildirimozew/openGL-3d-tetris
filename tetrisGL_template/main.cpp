@@ -490,7 +490,7 @@ void display()
     glClearDepth(1.0f);
     glClearStencil(0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-    
+
     glm::vec3 floorPos = glm::vec3(0, -1, 0);
     glm::mat4 movingCubeModelingMatrix = glm::translate(glm::mat4(1), movingCubePos);
     static std::vector<glm::vec3> settledCubes;
@@ -585,41 +585,45 @@ void display()
             }
         }
         movingCubePos.y = 6;
-    }
+        }
 
-    if (isAnimating) {
-    float deltaTime = 0.16f; 
-    elapsedTime += deltaTime;
+        if (isAnimating) {
+        double currentTime = glfwGetTime();
+        static double lastTime = currentTime;
+        float deltaTime = static_cast<float>(currentTime - lastTime);
+        lastTime = currentTime;
 
-    if (elapsedTime < animationTime) {
-        // Calculate the current angle based on elapsed time
-        float t = elapsedTime / animationTime;
-        float currentAngle = glm::radians(startAngle + t * (targetAngle - startAngle));
+        elapsedTime += deltaTime;
 
-        // Create an incremental rotation matrix
-        glm::mat4 incrementalRotation = glm::rotate(glm::mat4(1.0f), currentAngle, glm::vec3(0, 1, 0));
+        if (elapsedTime < animationTime) {
+            // Calculate the current angle based on elapsed time
+            float t = elapsedTime / animationTime;
+            float currentAngle = glm::radians(startAngle + t * (targetAngle - startAngle));
 
-        // Combine the starting viewing matrix with the incremental rotation
-        viewingMatrix = startViewingMatrix * incrementalRotation;
+            // Create an incremental rotation matrix
+            glm::mat4 incrementalRotation = glm::rotate(glm::mat4(1.0f), currentAngle, glm::vec3(0, 1, 0));
 
-        // Update the shader with the interpolated matrix
-        for (int i = 0; i < 2; ++i) {
+            // Combine the starting viewing matrix with the incremental rotation
+            viewingMatrix = startViewingMatrix * incrementalRotation;
+
+            // Update the shader with the interpolated matrix
+            for (int i = 0; i < 2; ++i) {
             glUseProgram(gProgram[i]);
             glUniformMatrix4fv(viewingMatrixLoc[i], 1, GL_FALSE, glm::value_ptr(viewingMatrix));
-        }
-    } else {
-        // End the animation
-        isAnimating = false;
-        viewingMatrix = startViewingMatrix * rotationMatrix;
+            }
+        } else {
+            // End the animation
+            isAnimating = false;
+            viewingMatrix = startViewingMatrix * rotationMatrix;
 
-        // Final update to the shader
-        for (int i = 0; i < 2; ++i) {
+            // Final update to the shader
+            for (int i = 0; i < 2; ++i) {
             glUseProgram(gProgram[i]);
             glUniformMatrix4fv(viewingMatrixLoc[i], 1, GL_FALSE, glm::value_ptr(viewingMatrix));
+            }
         }
-    }
-}
-    renderText("tetrisGL", gWidth/2 - 55, gHeight/2 - 60, 0.75, glm::vec3(1, 1, 0));
+        }
+    /*renderText("tetrisGL", gWidth/2 - 55, gHeight/2 - 60, 0.75, glm::vec3(1, 1, 0));*/
 
     assert(glGetError() == GL_NO_ERROR);
 }
