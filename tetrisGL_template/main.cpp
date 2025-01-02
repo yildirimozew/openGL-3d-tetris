@@ -53,7 +53,7 @@ glm::mat4 viewingMatrix;
 glm::mat4 modelingMatrix = glm::translate(glm::mat4(1.f), glm::vec3(-0.5, -0.5, -0.5));
 glm::vec3 eyePos = glm::vec3(0, 0, 24);
 glm::vec3 lightPos = glm::vec3(0, 0, 7);
-glm::vec3 movingCubePos = glm::vec3(0, 0, 0);
+glm::vec3 movingCubePos = glm::vec3(0, 0, 1);
 bool isMoving = true;
 glm::int16 speed = 1;
 int direction = 1;
@@ -65,10 +65,10 @@ glm::mat4 targetViewingMatrix;
 glm::mat4 rotationMatrix;
 float startAngle = 0.0f;    
 float targetAngle = 90.0f;   
-
+int look_direction = 0;
 //glm::vec3 kdGround(0.334, 0.288, 0.635); // this is the ground color in the demo
 glm::vec3 kdCubes(0.86, 0.11, 0.31);
-
+std::vector<glm::vec3> settledCubes;
 int activeProgramIndex = 0;
 
 // Holds all state information relevant to a character as loaded using FreeType
@@ -483,6 +483,21 @@ void renderText(const std::string& text, GLfloat x, GLfloat y, GLfloat scale, gl
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+bool does_hit(const glm::vec3& pos,const glm::vec3& tmp_movingCubePos){
+    for (int x = 0; x < 3; ++x) {
+        for (int y = 0; y < 3; ++y) {
+            for (int z = 0; z < 3; ++z) {
+                glm::vec3 offset = glm::vec3(x - 1.5, y - 1.5, z - 1.5);
+                glm::vec3 cubePos = tmp_movingCubePos + offset;
+                if (glm::distance(cubePos, pos) < 1) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
 
 void display()
 {
@@ -493,7 +508,7 @@ void display()
 
     glm::vec3 floorPos = glm::vec3(0, -1, 0);
     glm::mat4 movingCubeModelingMatrix = glm::translate(glm::mat4(1), movingCubePos);
-    static std::vector<glm::vec3> settledCubes;
+    static 
     glm::mat4 floorModelingMatrix = glm::translate(glm::mat4(1), floorPos);
 
     for (const auto& pos : settledCubes) {
@@ -520,7 +535,7 @@ void display()
         for (int x = 0; x < 3; ++x) {
             for (int y = 0; y < 3; ++y) {
             for (int z = 0; z < 3; ++z) {
-                glm::vec3 offset = glm::vec3(x - 1.5, y, z - 1.5);
+                glm::vec3 offset = glm::vec3(x - 1.5, y-1, z - 1.5);
                 glm::mat4 cubeModelingMatrix = glm::translate(movingCubeModelingMatrix, offset);
                 glUseProgram(gProgram[i]);
                 glUniformMatrix4fv(modelingMatrixLoc[i], 1, GL_FALSE, glm::value_ptr(cubeModelingMatrix));
@@ -555,9 +570,9 @@ void display()
             for (int x = 0; x < 3; ++x) {
                 for (int y = 0; y < 3; ++y) {
                     for (int z = 0; z < 3; ++z) {
-                        glm::vec3 offset = glm::vec3(x - 1.5, y - 1, z - 1.5);
+                        glm::vec3 offset = glm::vec3(x - 1.5, y - 1.5, z - 1.5);
                         glm::vec3 cubePos = movingCubePos + offset;
-                        if (glm::distance(cubePos, pos) < 1.5) {
+                        if (glm::distance(cubePos, pos) < 1) {
                             for (int x = 0; x < 3; ++x) {
                                 for (int y = 0; y < 3; ++y) {
                                     for (int z = 0; z < 3; ++z) {
@@ -632,7 +647,7 @@ void reshape(GLFWwindow* window, int w, int h)
 {
     w = w < 1 ? 1 : w;
     h = h < 1 ? 1 : h;
-
+    look_direction = 0;
     gWidth = w;
     gHeight = h;
 
@@ -660,11 +675,44 @@ void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
     {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
+    int base_index = look_direction * 4;
+    float min_val = -3, max_val = 3;
+    float z_min_val = -2, z_max_val = 4;
+    glm::vec3 tmp_movingCubePos = movingCubePos;
     if(key == GLFW_KEY_A && action == GLFW_PRESS){
-        movingCubePos.x -= 1;
+        switch(look_direction){
+            case 0:
+                tmp_movingCubePos.x = std::max(movingCubePos.x-1,min_val); break;
+            case 1:
+                tmp_movingCubePos.z = std::min(movingCubePos.z+1,z_max_val); break; 
+            case 2:
+                tmp_movingCubePos.x = std::min(movingCubePos.x+1,max_val); break;
+            default:
+                tmp_movingCubePos.z = std::max(movingCubePos.z-1,z_min_val); break;
+        }
+        
     }
     if(key == GLFW_KEY_D && action == GLFW_PRESS){
-        movingCubePos.x += 1;
+        switch(look_direction){
+            case 0:
+                tmp_movingCubePos.x = std::min(movingCubePos.x+1,max_val); break;
+            case 1:
+                tmp_movingCubePos.z = std::max(movingCubePos.z-1,z_min_val); break;
+            case 2:
+                tmp_movingCubePos.x = std::max(movingCubePos.x-1,min_val); break;
+            default:
+                tmp_movingCubePos.z = std::min(movingCubePos.z+1,z_max_val); break;
+        }
+    }
+    bool not_hit = true;
+    for(const auto& pos : settledCubes){
+        if(does_hit(pos,tmp_movingCubePos)){
+            not_hit = false;
+            break;
+        }
+    }
+    if(not_hit){
+        movingCubePos = tmp_movingCubePos;
     }
     if(key == GLFW_KEY_W && action == GLFW_PRESS){
         if(speed == 1){
@@ -681,7 +729,7 @@ void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
     if (key == GLFW_KEY_H && action == GLFW_PRESS) {
         isAnimating = true;
         elapsedTime = 0.0f;
-
+        look_direction = (look_direction + 3) % 4; 
         // Save the current viewing matrix
         startViewingMatrix = viewingMatrix;
 
@@ -693,6 +741,7 @@ void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
     if (key == GLFW_KEY_K && action == GLFW_PRESS) {
         isAnimating = true;
         elapsedTime = 0.0f;
+        look_direction = (look_direction + 1) % 4; 
 
         // Save the current viewing matrix
         startViewingMatrix = viewingMatrix;
@@ -701,16 +750,24 @@ void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
         rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(0, 1, 0));
         targetAngle = -90.0f;
     }
-
+    //std::cout<<"look direction: "<<look_direction<<std::endl;
     // Update animation in the render loop
 
 }
+
+    std::map<int,int> counter;
+void destroy_cubes(){
+    std::map<int,int> counter;
+
+}
+
 
 void mainLoop(GLFWwindow* window)
 {
     while (!glfwWindowShouldClose(window))
     {
         display();
+        destroy_cubes();
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
