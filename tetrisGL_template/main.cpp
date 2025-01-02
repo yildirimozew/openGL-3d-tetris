@@ -490,8 +490,7 @@ void display()
     glClearDepth(1.0f);
     glClearStencil(0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-    movingCubePos.y -= speed;
+    
     glm::vec3 floorPos = glm::vec3(0, -1, 0);
     glm::mat4 movingCubeModelingMatrix = glm::translate(glm::mat4(1), movingCubePos);
     static std::vector<glm::vec3> settledCubes;
@@ -508,6 +507,13 @@ void display()
         }
         drawCube();
         drawCubeEdges();
+    }
+
+    static double lastTime = glfwGetTime();
+    double currentTime = glfwGetTime();
+    if (currentTime - lastTime >= 1.0) {
+        movingCubePos.y -= speed;
+        lastTime = currentTime;
     }
 
     for(int i = 0; i < 2; i++){
