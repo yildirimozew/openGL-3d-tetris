@@ -606,6 +606,12 @@ void display()
         }
     }
 
+    for(auto& pos : settledCubes){
+        if(int(pos.y) == 7){
+            isMoving = false;
+        }
+    }
+
 
     if (isMoving && movingCubePos.y < -5) {
         for(const auto& offset: movingObject){
