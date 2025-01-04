@@ -78,7 +78,8 @@ float startAngle = 0.0f;
 float targetAngle = 90.0f;   
 int look_direction = 0;
 //glm::vec3 kdGround(0.334, 0.288, 0.635); // this is the ground color in the demo
-glm::vec3 kdCubes(0.86, 0.11, 0.31);
+glm::vec3 floorkdCubes(0.86, 0.11, 0.31);
+glm::vec3 kdCubes(252./256, 186./256, 3./256);
 std::vector<glm::vec3> settledCubes;
 int activeProgramIndex = 0;
 std::map<int,int> counter;
@@ -582,7 +583,7 @@ void display()
                 glUniformMatrix4fv(modelingMatrixLoc[i], 1, GL_FALSE, glm::value_ptr(modelingMatrix));
                 glUniform3fv(eyePosLoc[i], 1, glm::value_ptr(eyePos));
                 glUniform3fv(lightPosLoc[i], 1, glm::value_ptr(lightPos));
-                glUniform3fv(kdLoc[i], 1, glm::value_ptr(kdCubes));
+                glUniform3fv(kdLoc[i], 1, glm::value_ptr(floorkdCubes));
             }
             drawCube();
             drawCubeEdges();
