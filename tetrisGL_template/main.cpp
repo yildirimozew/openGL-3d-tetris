@@ -53,7 +53,7 @@ glm::mat4 viewingMatrix;
 glm::mat4 modelingMatrix = glm::translate(glm::mat4(1.f), glm::vec3(-0.5, -0.5, -0.5));
 glm::vec3 eyePos = glm::vec3(0, 0, 24);
 glm::vec3 lightPos = glm::vec3(0, 0, 7);
-glm::vec3 movingCubePos = glm::vec3(0, 0, 1);
+glm::vec3 movingCubePos = glm::vec3(0, 7, 1);
 bool isMoving = true;
 glm::int16 speed = 1;
 int direction = 1;
@@ -514,7 +514,7 @@ void display()
     glm::mat4 movingCubeModelingMatrix = glm::translate(glm::mat4(1), movingCubePos);
     static 
     glm::mat4 floorModelingMatrix = glm::translate(glm::mat4(1), floorPos);
-
+    
     for (const auto& pos : settledCubes) {
         glm::mat4 settledModelingMatrix = glm::translate(glm::mat4(1), pos);
         for (int i = 0; i < 2; i++) {
@@ -530,25 +530,27 @@ void display()
 
     static double lastTime = glfwGetTime();
     double currentTime = glfwGetTime();
-    if (currentTime - lastTime >= 1) {
+    if (currentTime - lastTime >= 0.3 && isMoving) {
         movingCubePos.y -= speed;
         lastTime = currentTime;
     }
 
-    for(int i = 0; i < 2; i++){
-        for (int x = 0; x < 3; ++x) {
-            for (int y = 0; y < 3; ++y) {
-            for (int z = 0; z < 3; ++z) {
-                glm::vec3 offset = glm::vec3(x - 1.5, y-1, z - 1.5);
-                glm::mat4 cubeModelingMatrix = glm::translate(movingCubeModelingMatrix, offset);
-                glUseProgram(gProgram[i]);
-                glUniformMatrix4fv(modelingMatrixLoc[i], 1, GL_FALSE, glm::value_ptr(cubeModelingMatrix));
-                glUniform3fv(eyePosLoc[i], 1, glm::value_ptr(eyePos));
-                glUniform3fv(lightPosLoc[i], 1, glm::value_ptr(lightPos));
-                glUniform3fv(kdLoc[i], 1, glm::value_ptr(kdCubes));
-                drawCube();
-                drawCubeEdges();
-            }
+    if(isMoving){
+        for(int i = 0; i < 2; i++){
+            for (int x = 0; x < 3; ++x) {
+                for (int y = 0; y < 3; ++y) {
+                for (int z = 0; z < 3; ++z) {
+                    glm::vec3 offset = glm::vec3(x - 1.5, y-1, z - 1.5);
+                    glm::mat4 cubeModelingMatrix = glm::translate(movingCubeModelingMatrix, offset);
+                    glUseProgram(gProgram[i]);
+                    glUniformMatrix4fv(modelingMatrixLoc[i], 1, GL_FALSE, glm::value_ptr(cubeModelingMatrix));
+                    glUniform3fv(eyePosLoc[i], 1, glm::value_ptr(eyePos));
+                    glUniform3fv(lightPosLoc[i], 1, glm::value_ptr(lightPos));
+                    glUniform3fv(kdLoc[i], 1, glm::value_ptr(kdCubes));
+                    drawCube();
+                    drawCubeEdges();
+                }
+                }
             }
         }
     }
@@ -586,12 +588,21 @@ void display()
                                     }
                                 }
                             }
-                            movingCubePos.y = 6;
+                            movingCubePos.y = 7;
+                            movingCubePos.x = 0;
+                            movingCubePos.z = 0;
                             break;
                         }
                     }
                 }
             }
+        }
+    }
+
+    for (const auto& pos : settledCubes) {
+        if (pos.y > 7) {
+            isMoving = false;
+            break;
         }
     }
 
@@ -605,7 +616,7 @@ void display()
                 }
             }
         }
-        movingCubePos.y = 6;
+        movingCubePos.y = 7;
         }
 
         if (isAnimating) {
@@ -648,6 +659,9 @@ void display()
             }
         }
         }
+    if(isMoving == false){
+        renderText("Game Over", 0, 500, 1, glm::vec3(1, 1, 0));
+    }
     renderText("Score: " + std::to_string(score/3), 0, 950, 0.75, glm::vec3(1, 1, 0));
     renderText(direction_text[look_direction], 0, 920, 0.75, glm::vec3(1, 1, 0));
     assert(glGetError() == GL_NO_ERROR);
@@ -736,6 +750,9 @@ void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
 
     // Key event to start the animation
     if (key == GLFW_KEY_H && action == GLFW_PRESS) {
+        if(isAnimating){
+            return;
+        }
         isAnimating = true;
         elapsedTime = 0.0f;
         look_direction = (look_direction + 3) % 4; 
@@ -749,14 +766,15 @@ void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
     }
 
     if (key == GLFW_KEY_K && action == GLFW_PRESS) {
+        if(isAnimating){
+            return;
+        }
         isAnimating = true;
         elapsedTime = 0.0f;
         look_direction = (look_direction + 1) % 4; 
 
-        // Save the current viewing matrix
         startViewingMatrix = viewingMatrix;
 
-        // Precompute the final rotation matrix for reference
         rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(0, 1, 0));
         targetAngle = -90.0f;
         justStarted = true;
