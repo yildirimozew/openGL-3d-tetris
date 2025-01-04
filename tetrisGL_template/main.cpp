@@ -85,7 +85,7 @@ std::map<int,int> counter;
 string direction_text[4] = {"Front","Right","Back","Left"};
 int score;
 bool justStarted = true;
-
+string lastPressedKey = "";
 
 
 //Start random generatr
@@ -596,7 +596,7 @@ void display()
                 if (glm::distance(cubePos, pos) < 1) {
                     for (const auto& offset2: movingObject) {
                         settledCubes.push_back(movingCubePos + offset2 + glm::vec3(0,1,0));
-                        counter[int(movingCubePos.y + offset2.y)]++;
+                        counter[int(movingCubePos.y + offset2.y + 1)]++;
                     }
                     movingCubePos.y = 6;
                     movingCubePos.x = 0;
@@ -673,6 +673,7 @@ void display()
     if(isMoving == false){
         renderText("Game Over", 200, 500, 1, glm::vec3(1, 1, 0));
     }
+    renderText(lastPressedKey, 550, 950, 0.75, glm::vec3(1, 1, 0));
     renderText("Score: " + std::to_string(score/3), 0, 950, 0.75, glm::vec3(1, 1, 0));
     renderText(direction_text[look_direction], 0, 920, 0.75, glm::vec3(1, 1, 0));
     assert(glGetError() == GL_NO_ERROR);
@@ -714,6 +715,7 @@ void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
     float z_min_val = -2, z_max_val = 4;
     glm::vec3 tmp_movingCubePos = movingCubePos;
     if(key == GLFW_KEY_A && action == GLFW_PRESS){
+        lastPressedKey = "A";
         switch(look_direction){
             case 0:
                 tmp_movingCubePos.x = movingCubePos.x-1; break;
@@ -727,6 +729,7 @@ void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
         
     }
     if(key == GLFW_KEY_D && action == GLFW_PRESS){
+        lastPressedKey = "D";
         switch(look_direction){
             case 0:
                 tmp_movingCubePos.x = movingCubePos.x+1; break;
@@ -752,11 +755,13 @@ void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
         }
     }
     if(key == GLFW_KEY_W && action == GLFW_PRESS){
+        lastPressedKey = "W";
         if(speed == 1){
             speed = 0;
         }
     }
     if(key == GLFW_KEY_S && action == GLFW_PRESS){
+        lastPressedKey = "S";
         if(speed == 0){
             speed = 1;
         }
@@ -764,6 +769,7 @@ void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
 
     // Key event to start the animation
     if (key == GLFW_KEY_H && action == GLFW_PRESS) {
+        lastPressedKey = "H";
         if(isAnimating){
             return;
         }
@@ -780,6 +786,7 @@ void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
     }
 
     if (key == GLFW_KEY_K && action == GLFW_PRESS) {
+        lastPressedKey = "K";
         if(isAnimating){
             return;
         }
