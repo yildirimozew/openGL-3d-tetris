@@ -671,7 +671,7 @@ void display()
         }
         }
     if(isMoving == false){
-        renderText("Game Over", 0, 500, 1, glm::vec3(1, 1, 0));
+        renderText("Game Over", 200, 500, 1, glm::vec3(1, 1, 0));
     }
     renderText("Score: " + std::to_string(score/3), 0, 950, 0.75, glm::vec3(1, 1, 0));
     renderText(direction_text[look_direction], 0, 920, 0.75, glm::vec3(1, 1, 0));
