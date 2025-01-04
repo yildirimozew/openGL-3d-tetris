@@ -73,6 +73,7 @@ int activeProgramIndex = 0;
 std::map<int,int> counter;
 string direction_text[4] = {"Front","Right","Back","Left"};
 int score;
+bool justStarted = true;
 
 // Holds all state information relevant to a character as loaded using FreeType
 struct Character {
@@ -608,12 +609,16 @@ void display()
         }
 
         if (isAnimating) {
-        double currentTime = glfwGetTime();
-        static double lastTime = currentTime;
-        float deltaTime = static_cast<float>(currentTime - lastTime);
-        lastTime = currentTime;
+        static double lastTime2 = glfwGetTime();
+        if(justStarted) {
+            justStarted = false;
+            lastTime2 = glfwGetTime();
+        }
+        double currentTime2 = glfwGetTime();
+        float deltaTime2 = static_cast<float>(currentTime2 - lastTime2);
+        lastTime2 = currentTime2;
 
-        elapsedTime += deltaTime;
+        elapsedTime += deltaTime2;
 
         if (elapsedTime < animationTime) {
             // Calculate the current angle based on elapsed time
@@ -740,6 +745,7 @@ void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
         // Precompute the final rotation matrix for reference
         rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0, 1, 0));
         targetAngle = 90.0f;
+        justStarted = true;
     }
 
     if (key == GLFW_KEY_K && action == GLFW_PRESS) {
@@ -753,6 +759,7 @@ void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
         // Precompute the final rotation matrix for reference
         rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(0, 1, 0));
         targetAngle = -90.0f;
+        justStarted = true;
     }
     //std::cout<<"look direction: "<<look_direction<<std::endl;
     // Update animation in the render loop
