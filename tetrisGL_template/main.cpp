@@ -600,7 +600,7 @@ void display()
                     }
                     movingCubePos.y = 6;
                     movingCubePos.x = 0;
-                    movingCubePos.z = 0;
+                    movingCubePos.z = 1;
                     int index = dis(gen);
                     std::cout << index << std::endl;
                     movingObject = movingObjectList[index];
@@ -623,6 +623,8 @@ void display()
             counter[int(movingCubePos.y + offset.y)]++;
         }
         movingCubePos.y = 6;
+        movingCubePos.x = 0;
+        movingCubePos.z = 1;
         int index = dis(gen);
         std::cout << index << std::endl;
         movingObject = movingObjectList[index];
@@ -869,7 +871,7 @@ int main(int argc, char** argv)   // Create Main Function For Bringing It All To
     double_cube.clear();
     for(float x = -1.5; x <=1 ; x++)
         for(int y = -1; y <=1 ; y++)
-            for(int z = -2.5; z <=3 ; z++)
+            for(float z = -2.5; z <=3 ; z++)
                 double_cube.push_back(glm::vec3(x,y,z));
     movingObjectList.push_back(double_cube);
     double_cube.clear();
