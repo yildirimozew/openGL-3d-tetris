@@ -29,7 +29,7 @@
 #include <glm/gtc/type_ptr.hpp> 
 #include <ft2build.h>
 #include FT_FREETYPE_H
-
+#include <random>
 #define BUFFER_OFFSET(i) ((char*)NULL + (i))
 
 using namespace std;
@@ -53,7 +53,18 @@ glm::mat4 viewingMatrix;
 glm::mat4 modelingMatrix = glm::translate(glm::mat4(1.f), glm::vec3(-0.5, -0.5, -0.5));
 glm::vec3 eyePos = glm::vec3(0, 0, 24);
 glm::vec3 lightPos = glm::vec3(0, 0, 7);
-glm::vec3 movingCubePos = glm::vec3(0, 7, 1);
+
+
+
+
+
+std::vector<std::vector<glm::vec3>>  movingObjectList;
+std::vector<glm::vec3> movingObject;
+glm::vec3 movingCubePos = glm::vec3(0, 0, 1);
+
+
+
+
 bool isMoving = true;
 glm::int16 speed = 1;
 int direction = 1;
@@ -75,6 +86,17 @@ string direction_text[4] = {"Front","Right","Back","Left"};
 int score;
 bool justStarted = true;
 
+
+
+//Start random generatr
+std::random_device rd;
+std::mt19937 gen(rd()); 
+std::uniform_int_distribution<> dis;
+
+
+
+
+
 // Holds all state information relevant to a character as loaded using FreeType
 struct Character {
     GLuint TextureID;   // ID handle of the glyph texture
@@ -82,7 +104,6 @@ struct Character {
     glm::ivec2 Bearing;  // Offset from baseline to left/top of glyph
     GLuint Advance;    // Horizontal offset to advance to next glyph
 };
-
 std::map<GLchar, Character> Characters;
 
 // For reading GLSL files
@@ -488,20 +509,22 @@ void renderText(const std::string& text, GLfloat x, GLfloat y, GLfloat scale, gl
 }
 
 bool does_hit(const glm::vec3& pos,const glm::vec3& tmp_movingCubePos){
-    for (int x = 0; x < 3; ++x) {
-        for (int y = 0; y < 3; ++y) {
-            for (int z = 0; z < 3; ++z) {
-                glm::vec3 offset = glm::vec3(x - 1.5, y - 1.5, z - 1.5);
-                glm::vec3 cubePos = tmp_movingCubePos + offset;
-                if (glm::distance(cubePos, pos) < 1) {
-                    return true;
-                }
-            }
+    for(const auto& offset: movingObject){
+        glm::vec3 cubePos = tmp_movingCubePos + offset;
+        if (glm::distance(cubePos, pos) < 1) {
+            return true;
         }
     }
     return false;
 }
-
+bool out_of_bounds(const glm::vec3& tmp_movingCubePos){
+    for(const auto& offset: movingObject){
+        glm::vec3 cubePos = tmp_movingCubePos + offset;
+        if (cubePos.x < -5 || cubePos.x > 4 || cubePos.z < -4 || cubePos.z > 5)
+            return true;
+    }
+    return false;
+}
 
 void display()
 {
@@ -535,23 +558,16 @@ void display()
         lastTime = currentTime;
     }
 
-    if(isMoving){
-        for(int i = 0; i < 2; i++){
-            for (int x = 0; x < 3; ++x) {
-                for (int y = 0; y < 3; ++y) {
-                for (int z = 0; z < 3; ++z) {
-                    glm::vec3 offset = glm::vec3(x - 1.5, y-1, z - 1.5);
-                    glm::mat4 cubeModelingMatrix = glm::translate(movingCubeModelingMatrix, offset);
-                    glUseProgram(gProgram[i]);
-                    glUniformMatrix4fv(modelingMatrixLoc[i], 1, GL_FALSE, glm::value_ptr(cubeModelingMatrix));
-                    glUniform3fv(eyePosLoc[i], 1, glm::value_ptr(eyePos));
-                    glUniform3fv(lightPosLoc[i], 1, glm::value_ptr(lightPos));
-                    glUniform3fv(kdLoc[i], 1, glm::value_ptr(kdCubes));
-                    drawCube();
-                    drawCubeEdges();
-                }
-                }
-            }
+    for(int i = 0; i < 2; i++){
+        for (const auto& offset: movingObject){
+            glm::mat4 cubeModelingMatrix = glm::translate(movingCubeModelingMatrix, offset);
+            glUseProgram(gProgram[i]);
+            glUniformMatrix4fv(modelingMatrixLoc[i], 1, GL_FALSE, glm::value_ptr(cubeModelingMatrix));
+            glUniform3fv(eyePosLoc[i], 1, glm::value_ptr(eyePos));
+            glUniform3fv(lightPosLoc[i], 1, glm::value_ptr(lightPos));
+            glUniform3fv(kdLoc[i], 1, glm::value_ptr(kdCubes));
+            drawCube();
+            drawCubeEdges();
         }
     }
 
@@ -573,50 +589,33 @@ void display()
 
     if (isMoving) {
         for (const auto& pos : settledCubes) {
-            for (int x = 0; x < 3; ++x) {
-                for (int y = 0; y < 3; ++y) {
-                    for (int z = 0; z < 3; ++z) {
-                        glm::vec3 offset = glm::vec3(x - 1.5, y - 1.5, z - 1.5);
-                        glm::vec3 cubePos = movingCubePos + offset;
-                        if (glm::distance(cubePos, pos) < 1) {
-                            for (int x = 0; x < 3; ++x) {
-                                for (int y = 0; y < 3; ++y) {
-                                    for (int z = 0; z < 3; ++z) {
-                                        glm::vec3 offset = glm::vec3(x - 1.5, y - 1, z - 1.5);
-                                        settledCubes.push_back(movingCubePos + offset);
-                                        counter[int(movingCubePos.y + offset.y)]++;
-                                    }
-                                }
-                            }
-                            movingCubePos.y = 7;
-                            movingCubePos.x = 0;
-                            movingCubePos.z = 0;
-                            break;
-                        }
+            for (const auto& offset: movingObject) {
+                glm::vec3 cubePos = movingCubePos + offset;
+                if (glm::distance(cubePos, pos) < 1) {
+                    for (const auto& offset2: movingObject) {
+                        settledCubes.push_back(movingCubePos + offset2 + glm::vec3(0,1,0));
+                        counter[int(movingCubePos.y + offset2.y)]++;
                     }
+                    movingCubePos.y = 6;
+                    int index = dis(gen);
+                    std::cout << index << std::endl;
+                    movingObject = movingObjectList[index];
+                    break;
                 }
             }
         }
     }
 
-    for (const auto& pos : settledCubes) {
-        if (pos.y > 7) {
-            isMoving = false;
-            break;
-        }
-    }
 
     if (isMoving && movingCubePos.y < -5) {
-        for (int x = 0; x < 3; ++x) {
-            for (int y = 0; y < 3; ++y) {
-                for (int z = 0; z < 3; ++z) {
-                    glm::vec3 offset = glm::vec3(x - 1.5, y - 1, z - 1.5);
-                    settledCubes.push_back(movingCubePos + offset);
-                    counter[int(movingCubePos.y + offset.y)]++;
-                }
-            }
+        for(const auto& offset: movingObject){
+            settledCubes.push_back(movingCubePos + offset);
+            counter[int(movingCubePos.y + offset.y)]++;
         }
-        movingCubePos.y = 7;
+        movingCubePos.y = 6;
+        int index = dis(gen);
+        std::cout << index << std::endl;
+        movingObject = movingObjectList[index];
         }
 
         if (isAnimating) {
@@ -705,37 +704,40 @@ void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
     if(key == GLFW_KEY_A && action == GLFW_PRESS){
         switch(look_direction){
             case 0:
-                tmp_movingCubePos.x = std::max(movingCubePos.x-1,min_val); break;
+                tmp_movingCubePos.x = movingCubePos.x-1; break;
             case 1:
-                tmp_movingCubePos.z = std::min(movingCubePos.z+1,z_max_val); break; 
+                tmp_movingCubePos.z = movingCubePos.z+1; break; 
             case 2:
-                tmp_movingCubePos.x = std::min(movingCubePos.x+1,max_val); break;
+                tmp_movingCubePos.x = movingCubePos.x+1; break;
             default:
-                tmp_movingCubePos.z = std::max(movingCubePos.z-1,z_min_val); break;
+                tmp_movingCubePos.z = movingCubePos.z-1; break;
         }
         
     }
     if(key == GLFW_KEY_D && action == GLFW_PRESS){
         switch(look_direction){
             case 0:
-                tmp_movingCubePos.x = std::min(movingCubePos.x+1,max_val); break;
+                tmp_movingCubePos.x = movingCubePos.x+1; break;
             case 1:
-                tmp_movingCubePos.z = std::max(movingCubePos.z-1,z_min_val); break;
+                tmp_movingCubePos.z = movingCubePos.z-1; break;
             case 2:
-                tmp_movingCubePos.x = std::max(movingCubePos.x-1,min_val); break;
+                tmp_movingCubePos.x = movingCubePos.x-1; break;
             default:
-                tmp_movingCubePos.z = std::min(movingCubePos.z+1,z_max_val); break;
+                tmp_movingCubePos.z = movingCubePos.z+1; break;
         }
     }
     bool not_hit = true;
-    for(const auto& pos : settledCubes){
-        if(does_hit(pos,tmp_movingCubePos)){
-            not_hit = false;
-            break;
+    bool is_out_of_bounds = out_of_bounds(tmp_movingCubePos);
+    if (!is_out_of_bounds){
+        for(const auto& pos : settledCubes){
+            if(does_hit(pos,tmp_movingCubePos)){
+                not_hit = false;
+                break;
+            }
         }
-    }
-    if(not_hit){
-        movingCubePos = tmp_movingCubePos;
+        if(not_hit){
+            movingCubePos = tmp_movingCubePos;
+        }
     }
     if(key == GLFW_KEY_W && action == GLFW_PRESS){
         if(speed == 1){
@@ -837,6 +839,35 @@ int main(int argc, char** argv)   // Create Main Function For Bringing It All To
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    std::vector<glm::vec3> cube,double_cube;
+    for(float x = -1.5; x <=1 ; x++)
+        for(float y = -1; y <=1 ; y++)
+            for(float z = -1.5; z <=1 ; z++)
+                cube.push_back(glm::vec3(x,y,z));
+    movingObjectList.push_back(cube);
+    for(float x = -2.5; x <=3 ; x++)
+        for(float y = -1; y <=1 ; y++)
+            for(float z = -1.5; z <=1 ; z++)
+                double_cube.push_back(glm::vec3(x,y,z));
+    movingObjectList.push_back(double_cube);
+    double_cube.clear();
+    for(float x = -1.5; x <=1 ; x++)
+        for(int y = -1; y <=4 ; y++)
+            for(float z = -1.5; z <=1 ; z++)
+                double_cube.push_back(glm::vec3(x,y,z));
+    movingObjectList.push_back(double_cube);
+    double_cube.clear();
+    for(float x = -1.5; x <=1 ; x++)
+        for(int y = -1; y <=1 ; y++)
+            for(int z = -2.5; z <=3 ; z++)
+                double_cube.push_back(glm::vec3(x,y,z));
+    movingObjectList.push_back(double_cube);
+    double_cube.clear();
+
+    std::uniform_int_distribution<> tmp_dis(0,movingObjectList.size()-1);
+    dis = tmp_dis;
+    movingObject = movingObjectList[dis(gen)];
+
 
     window = glfwCreateWindow(gWidth, gHeight, "tetrisGL", NULL, NULL);
 
