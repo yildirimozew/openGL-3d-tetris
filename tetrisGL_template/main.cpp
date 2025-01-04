@@ -558,7 +558,8 @@ void display()
         lastTime = currentTime;
     }
 
-    for(int i = 0; i < 2; i++){
+    if(isMoving){
+        for(int i = 0; i < 2; i++){
         for (const auto& offset: movingObject){
             glm::mat4 cubeModelingMatrix = glm::translate(movingCubeModelingMatrix, offset);
             glUseProgram(gProgram[i]);
@@ -569,6 +570,7 @@ void display()
             drawCube();
             drawCubeEdges();
         }
+    }
     }
 
     for(float k = -4.5; k < 4; k++){
@@ -597,6 +599,8 @@ void display()
                         counter[int(movingCubePos.y + offset2.y)]++;
                     }
                     movingCubePos.y = 6;
+                    movingCubePos.x = 0;
+                    movingCubePos.z = 0;
                     int index = dis(gen);
                     std::cout << index << std::endl;
                     movingObject = movingObjectList[index];
